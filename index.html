@@ -73,7 +73,7 @@
                     </div>
                 </div>
                 <button onclick="addRecipe()" class="flex items-center gap-2 wiki-secondary-accent-bg wiki-secondary-accent-hover-bg text-[#101010] px-6 py-3 rounded-lg font-bold shadow-lg shadow-black/40 transition-all hover:-translate-y-0.5 active:scale-95 text-sm">
-                    <i data-lucide="plus" class="w-5 h-5"></i> New recipe group
+                    <i data-lucide="plus" class="w-5 h-5"></i> New recipe
                 </button>
             </div>
         </div>
@@ -88,7 +88,7 @@
         let recipes = [
             {
                 id: Date.now(),
-                name: "Untitled Recipe Group 1",
+                name: "Untitled Recipe 1",
                 targetTime: 1,
                 ingredients: [
                     { id: 1, name: "Untitled Item", prodQty: 1, prodTime: 1, reqQty: 1 }
@@ -135,7 +135,7 @@
                 ingredient[field] = value;
             }
 
-            // 2. Re-calculate and update ALL ingredient result badges on this recipe group
+            // 2. Re-calculate and update ALL ingredient result badges on this recipe
             recipe.ingredients.forEach(ing => {
                 const pRate = (ing.prodQty > 0 && ing.prodTime > 0) ? (ing.prodQty / ing.prodTime) : 0;
                 const cRate = (ing.reqQty > 0 && recipe.targetTime > 0) ? (ing.reqQty / recipe.targetTime) : 0;
@@ -199,7 +199,7 @@
                             <input type="text" value="${recipe.name}" 
                                 class="bg-transparent text-2xl font-bold text-white border-none p-0 focus:ring-0 placeholder-slate-600 w-full"
                                 onchange="updateRecipe(${recipe.id}, 'name', this.value)"
-                                placeholder="Untitled Recipe Group"
+                                placeholder="Untitled Recipe"
                                 title="you can change this name btw">
                         </div>
                         
@@ -219,7 +219,7 @@
                             </div>
                             
                             <button onclick="removeRecipe(${recipe.id})" class="h-10 w-10 flex items-center justify-center rounded-lg bg-[#2A2A2A] text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all ml-2 border border-[#2A2A2A] hover:border-red-500/50"
-                                title="get this recipe group out my face!">
+                                title="get this recipe out my face!">
                                 <i data-lucide="trash-2" class="w-5 h-5"></i>
                             </button>
                         </div>
@@ -367,7 +367,7 @@
             const newIndex = recipes.length + 1;
             recipes.push({
                 id: Date.now(),
-                name: `Untitled Recipe Group ${newIndex}`,
+                name: `Untitled  Recipe${newIndex}`,
                 targetTime: 1,
                 ingredients: [{ id: Date.now()+1, name: "Untitled Item", prodQty: 1, prodTime: 1, reqQty: 1 }]
             });
