@@ -3,23 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Ingredient Factory Balancer</title>
+    <title>Industrialist Project Planner</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap');
         
-        body { font-family: 'Inter', sans-serif; overflow: hidden; }
+        body { font-family: 'Inter', sans-serif; background-color: #020617; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(8px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
         .custom-scroll { overflow-y: auto; }
-        .custom-scroll::-webkit-scrollbar { width: 8px; }
+        .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
         .custom-scroll::-webkit-scrollbar-track { background: #0f172a; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #475569; }
@@ -28,217 +22,310 @@
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
-<body class="bg-slate-950 text-slate-200 h-screen flex flex-col">
+<body class="text-slate-200 h-screen flex flex-col overflow-hidden">
 
-    <!-- 1. HEADER & GLOBAL TIME (Fixed Top) -->
-    <div class="shrink-0 bg-slate-900 border-b border-slate-800 shadow-xl z-20">
-        <div class="max-w-7xl mx-auto px-4 py-6">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+    <div class="shrink-0 bg-slate-900 border-b border-slate-800 z-20">
+        <div class="max-w-[1600px] mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
                 
-                <!-- Title -->
                 <div class="flex items-center gap-3">
-                    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-2 rounded-lg shadow-lg shadow-emerald-500/20">
-                        <i data-lucide="layers" class="text-white w-6 h-6"></i>
+                    <div class="bg-gradient-to-br from-indigo-500 to-purple-600 p-2 rounded-lg shadow-lg shadow-indigo-500/20">
+                        <i data-lucide="factory" class="text-white w-6 h-6"></i>
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold text-slate-100 leading-tight">Recipe Balancer</h1>
-                        <p class="text-xs text-slate-500">Plan multiple ingredients at once</p>
+                        <h1 class="text-xl font-bold text-slate-100 leading-tight">Factory Planner</h1>
+                        <p class="text-xs text-slate-500">Multi-stage production calculator</p>
                     </div>
                 </div>
 
-                <!-- GLOBAL RECIPE TIME -->
-                <div class="flex-1 bg-slate-950/50 rounded-xl border border-slate-800 p-4 flex items-center justify-center gap-6 max-w-2xl">
-                    <div class="flex items-center gap-2">
-                        <i data-lucide="clock" class="text-rose-500 w-5 h-5"></i>
-                        <span class="text-sm font-bold text-rose-100 uppercase tracking-wide">Target Recipe Time</span>
-                    </div>
-
-                    <div class="relative group w-32">
-                        <input type="number" id="global-time" value="1" 
-                            class="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-white font-mono text-xl text-center focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all input-listen">
-                        <span class="absolute right-2 top-3 text-xs text-slate-600 font-bold">SEC</span>
-                    </div>
-
-                    <div class="text-xs text-slate-500 w-32 leading-tight">
-                        This time applies to <span class="text-rose-400 font-bold">ALL</span> ingredients below.
-                    </div>
+                <div class="flex items-center gap-4">
+                    <button onclick="addRecipe()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold shadow-lg shadow-emerald-900/20 transition-all hover:-translate-y-0.5 active:scale-95 text-sm">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        New Recipe Group
+                    </button>
                 </div>
-
-                <!-- Calculate Button -->
-                <button onclick="calculateAll()" class="bg-blue-600 hover:bg-blue-500 text-white p-3 rounded-lg transition-colors shadow-lg shadow-blue-900/20 active:scale-95">
-                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
-                </button>
             </div>
         </div>
     </div>
 
-    <!-- 2. TABLE HEADERS (Fixed) -->
-    <div class="max-w-7xl mx-auto w-full px-4 mt-6 mb-2 grid grid-cols-12 gap-4 text-xs font-bold text-slate-500 uppercase tracking-wider pl-4">
-        <div class="col-span-1">#</div>
-        <div class="col-span-3">Producer Machine</div>
-        <div class="col-span-2 text-center">Producer Output</div>
-        <div class="col-span-2 text-center text-rose-400">Needs (Qty)</div>
-        <!-- Result Header Split -->
-        <div class="col-span-4 grid grid-cols-2 gap-4">
-            <div class="text-center text-emerald-400">For 1 Consumer</div>
-            <div class="text-center text-blue-400">Perfect Ratio</div>
-        </div>
-    </div>
-
-    <!-- 3. SCROLLABLE PRODUCER LIST -->
-    <div class="flex-1 overflow-hidden relative max-w-7xl mx-auto w-full px-4 pb-4">
-        <div id="producers-container" class="h-full custom-scroll space-y-2 pb-20 pr-2">
-            <!-- Dynamic Rows -->
-        </div>
-        
-        <!-- Floating Add Button -->
-        <div class="absolute bottom-6 right-8">
-            <button onclick="addProducer()" class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-full font-bold shadow-xl shadow-emerald-900/20 transition-all hover:-translate-y-1 active:scale-95">
-                <i data-lucide="plus" class="w-5 h-5"></i>
-                Add Ingredient
-            </button>
-        </div>
+    <div class="flex-1 overflow-hidden relative w-full bg-slate-950">
+        <div id="workspace" class="h-full custom-scroll p-6 pb-20 grid grid-cols-1 xl:grid-cols-2 gap-6 max-w-[1600px] mx-auto">
+            </div>
     </div>
 
     <script>
         // --- State ---
-        // We now store 'reqQty' (Requirement Quantity) for each row
-        let producers = [
-            { id: 1, name: "Ingredient 1", prodQty: 1, prodTime: 1, reqQty: 1 },
-            { id: 2, name: "Ingredient 2", prodQty: 1, prodTime: 1, reqQty: 1 }
+        // We now store an array of Recipe Objects
+        // Each recipe has: id, name, targetTime, and ingredients[]
+        let recipes = [
+            {
+                id: Date.now(),
+                name: "Iron Smelting",
+                targetTime: 1,
+                ingredients: [
+                    { id: 1, name: "Iron Ore", prodQty: 1, prodTime: 1, reqQty: 1 }
+                ]
+            }
         ];
 
         // --- Math Helpers ---
+        
+        // GCD for integers
         const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
 
-        // --- Core Functions ---
+        // Advanced Logic for floats (e.g. 1.35)
+        function calculatePerfectRatio(reqQty, reqTime, prodQty, prodTime) {
+            // Formula: (ReqQty / ReqTime) == (ProdQty / ProdTime) * (NumProducers / NumConsumers)
+            // Simplified: (ReqQty * ProdTime) / (ReqTime * ProdQty) = Ratio
+            
+            let num = reqQty * prodTime;
+            let den = reqTime * prodQty;
 
-        function renderRows() {
-            const container = document.getElementById('producers-container');
-            const globalTimeVal = Number(document.getElementById('global-time').value);
+            // Handle Floats: Scale up until integers
+            // Prevent infinite loops with a safety counter
+            let safety = 0;
+            while ((num % 1 !== 0 || den % 1 !== 0) && safety < 10) {
+                num *= 10;
+                den *= 10;
+                safety++;
+            }
 
+            num = Math.round(num);
+            den = Math.round(den);
+
+            if (num === 0 || den === 0) return { valid: false };
+
+            const divisor = gcd(num, den);
+            const finalProd = num / divisor;
+            const finalCons = den / divisor;
+
+            // CAP CHECK: If numbers are too big, it's not viable for gameplay
+            if (finalProd > 200 || finalCons > 200) {
+                return { valid: false, reason: "Too Complex" };
+            }
+
+            return { valid: true, prod: finalProd, cons: finalCons };
+        }
+
+        // --- Rendering ---
+
+        function render() {
+            const container = document.getElementById('workspace');
             container.innerHTML = '';
 
-            producers.forEach((p, index) => {
+            recipes.forEach((recipe, rIndex) => {
+                const card = document.createElement('div');
+                card.className = 'bg-slate-900/80 border border-slate-800 rounded-xl shadow-xl flex flex-col backdrop-blur-sm h-fit';
                 
-                // Math Logic
-                // Producer Rate = prodQty / prodTime
-                // Consumer Rate = reqQty / GLOBAL TIME
-                
-                const pRate = (p.prodQty > 0 && p.prodTime > 0) ? (p.prodQty / p.prodTime) : 0;
-                const cRate = (p.reqQty > 0 && globalTimeVal > 0) ? (p.reqQty / globalTimeVal) : 0;
-                
-                let resultSingle = '<span class="text-slate-600">-</span>';
-                let resultPerfect = '<span class="text-slate-600 italic text-xs">Press Enter...</span>';
-
-                if (pRate > 0 && cRate > 0) {
-                    
-                    // 1. Single Consumer Math
-                    // How many producers needed to match 1 consumer's demand?
-                    // Needed = ConsumerRate / ProducerRate
-                    const exactNeeded = cRate / pRate;
-                    const roundedNeeded = Math.ceil(exactNeeded);
-                    
-                    // 2. Perfect Ratio Math
-                    const num = p.reqQty * p.prodTime;
-                    const den = globalTimeVal * p.prodQty;
-                    const common = gcd(num, den);
-                    
-                    const reqProd = num / common;
-                    const reqCons = den / common;
-
-                    // HTML for Single (Rounded UP)
-                    resultSingle = `
-                        <div class="text-center group/tooltip relative cursor-help">
-                            <div class="text-emerald-400 font-bold font-mono text-lg">${roundedNeeded}</div>
-                            <div class="text-[9px] text-emerald-500/50 uppercase font-bold">Producers</div>
-                            
-                            <!-- Tooltip for exact decimal -->
-                            <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 border border-slate-700 text-xs text-slate-300 rounded opacity-0 group-hover/tooltip:opacity-100 pointer-events-none whitespace-nowrap transition-opacity shadow-xl z-10">
-                                Exact: ${exactNeeded.toFixed(2)}
+                // 1. Recipe Header
+                let headerHtml = `
+                    <div class="p-4 border-b border-slate-800 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-slate-900 rounded-t-xl">
+                        <div class="flex items-center gap-3 flex-1">
+                            <div class="flex flex-col">
+                                <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Recipe Name</label>
+                                <input type="text" value="${recipe.name}" 
+                                    class="bg-transparent text-lg font-bold text-white border-none p-0 focus:ring-0 placeholder-slate-600 w-full"
+                                    onchange="updateRecipe(${recipe.id}, 'name', this.value)"
+                                    placeholder="Recipe Name...">
                             </div>
                         </div>
-                    `;
 
-                    // HTML for Perfect
-                    resultPerfect = `
-                        <div class="flex items-center justify-center gap-2">
-                            <div class="text-center">
-                                <div class="text-blue-400 font-bold font-mono text-lg leading-none">${reqProd}</div>
-                                <div class="text-[9px] text-blue-500/50 uppercase font-bold mt-1">Prod</div>
+                        <div class="flex items-center gap-4 bg-slate-950 p-2 rounded-lg border border-slate-800">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="clock" class="text-rose-500 w-4 h-4"></i>
+                                <span class="text-xs font-bold text-rose-100 uppercase">Target Time</span>
                             </div>
-                            <i data-lucide="arrow-right" class="w-3 h-3 text-slate-600"></i>
-                            <div class="text-center">
-                                <div class="text-rose-400 font-bold font-mono text-lg leading-none">${reqCons}</div>
-                                <div class="text-[9px] text-rose-500/50 uppercase font-bold mt-1">Cons</div>
+                            <div class="relative w-20">
+                                <input type="number" value="${recipe.targetTime}" 
+                                    class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white font-mono text-center focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 transition-all text-sm input-listen"
+                                    onchange="updateRecipe(${recipe.id}, 'targetTime', this.value)">
+                                <span class="absolute right-1 top-1.5 text-[9px] text-slate-600 font-bold">SEC</span>
                             </div>
                         </div>
-                    `;
-                }
 
-                // Row HTML
-                const row = document.createElement('div');
-                row.className = 'group grid grid-cols-12 gap-4 items-center bg-slate-900/50 hover:bg-slate-800 border border-slate-800 rounded-lg p-4 transition-colors relative overflow-hidden';
-                row.innerHTML = `
-                    <!-- Decoration Line -->
-                    <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-slate-800 opacity-50"></div>
-
-                    <!-- Index & Delete -->
-                    <div class="col-span-1 flex items-center gap-2 pl-2">
-                        <span class="text-slate-500 font-mono text-sm">#${index + 1}</span>
-                        ${producers.length > 1 ? `
-                        <button onclick="removeProducer(${p.id})" class="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-all">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
-                        </button>` : ''}
+                        <button onclick="removeRecipe(${recipe.id})" class="text-slate-600 hover:text-red-400 p-2 transition-colors" title="Delete Recipe">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
                     </div>
 
-                    <!-- Name -->
-                    <div class="col-span-3">
-                        <input type="text" value="${p.name}" 
-                            class="w-full bg-transparent border-none text-blue-100 placeholder-slate-600 text-sm font-bold focus:ring-0 px-0 input-listen"
-                            onchange="updateData(${p.id}, 'name', this.value)"
-                            placeholder="Item Name (e.g. Coal)">
-                    </div>
-
-                    <!-- Producer Inputs (Left) -->
-                    <div class="col-span-2 flex flex-col items-center gap-1 border-r border-slate-800 pr-4">
-                        <div class="flex items-center gap-1 w-full">
-                            <input type="number" value="${p.prodQty}" 
-                                class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-center text-blue-200 font-mono text-sm focus:border-blue-500 focus:outline-none input-listen"
-                                onchange="updateData(${p.id}, 'prodQty', this.value)">
-                            <span class="text-[10px] text-slate-600 font-bold uppercase">Items</span>
-                        </div>
-                        <div class="flex items-center gap-1 w-full">
-                            <input type="number" value="${p.prodTime}" 
-                                class="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-center text-blue-200 font-mono text-sm focus:border-blue-500 focus:outline-none input-listen"
-                                onchange="updateData(${p.id}, 'prodTime', this.value)">
-                            <span class="text-[10px] text-slate-600 font-bold uppercase">Sec</span>
+                    <div class="grid grid-cols-12 gap-2 px-4 py-2 bg-slate-950/50 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-800">
+                        <div class="col-span-4">Ingredient Info</div>
+                        <div class="col-span-2 text-center">Output Rate</div>
+                        <div class="col-span-2 text-center text-rose-400">Needs</div>
+                        <div class="col-span-4 grid grid-cols-2 text-center">
+                            <span class="text-emerald-400">Machines</span>
+                            <span class="text-blue-400">Ratio</span>
                         </div>
                     </div>
 
-                    <!-- Consumer Requirement -->
-                    <div class="col-span-2 flex flex-col items-center justify-center border-r border-slate-800 px-4">
-                        <div class="relative w-20">
-                            <label class="absolute -top-2 left-2 px-1 bg-slate-900 text-[9px] font-bold text-rose-500 uppercase">Needs</label>
-                            <input type="number" value="${p.reqQty}" 
-                                class="w-full bg-slate-900 border border-rose-900/50 rounded px-2 py-2 text-center text-rose-200 font-mono text-lg font-bold focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 input-listen"
-                                onchange="updateData(${p.id}, 'reqQty', this.value)">
-                        </div>
-                    </div>
-
-                    <!-- Result Split (Right) -->
-                    <div class="col-span-4 grid grid-cols-2 gap-4 items-center">
-                        ${resultSingle}
-                        <div class="bg-slate-950/40 py-2 rounded-lg border border-slate-700/50">
-                            ${resultPerfect}
-                        </div>
-                    </div>
+                    <div class="p-4 space-y-2">
                 `;
-                container.appendChild(row);
+
+                // 2. Ingredients Logic
+                recipe.ingredients.forEach((ing) => {
+                    // Logic
+                    const pRate = (ing.prodQty > 0 && ing.prodTime > 0) ? (ing.prodQty / ing.prodTime) : 0;
+                    const cRate = (ing.reqQty > 0 && recipe.targetTime > 0) ? (ing.reqQty / recipe.targetTime) : 0;
+
+                    let resultSingle = '<span class="text-slate-700">-</span>';
+                    let resultPerfect = '<span class="text-slate-700">-</span>';
+
+                    if (pRate > 0 && cRate > 0) {
+                        // Needed
+                        const exactNeeded = cRate / pRate;
+                        const roundedNeeded = Math.ceil(exactNeeded);
+                        
+                        // Ratio
+                        const ratio = calculatePerfectRatio(ing.reqQty, recipe.targetTime, ing.prodQty, ing.prodTime);
+
+                        // HTML Single
+                        resultSingle = `
+                            <div class="text-center group/tooltip relative cursor-help">
+                                <div class="text-emerald-400 font-bold font-mono text-lg">${roundedNeeded}</div>
+                                <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-slate-800 border border-slate-700 text-xs text-slate-300 rounded opacity-0 group-hover/tooltip:opacity-100 pointer-events-none whitespace-nowrap z-50">
+                                    Exact: ${exactNeeded.toFixed(3)}
+                                </div>
+                            </div>
+                        `;
+
+                        // HTML Perfect
+                        if (ratio.valid) {
+                            resultPerfect = `
+                                <div class="flex items-center justify-center gap-1">
+                                    <span class="text-blue-400 font-bold font-mono text-sm">${ratio.prod}</span>
+                                    <span class="text-[9px] text-slate-600">:</span>
+                                    <span class="text-rose-400 font-bold font-mono text-sm">${ratio.cons}</span>
+                                </div>
+                            `;
+                        } else {
+                            resultPerfect = `
+                                <div class="text-[9px] font-bold text-slate-600 bg-slate-900 py-1 px-2 rounded border border-slate-800">
+                                    N/A
+                                </div>
+                            `;
+                        }
+                    }
+
+                    // Row HTML
+                    headerHtml += `
+                        <div class="grid grid-cols-12 gap-2 items-center bg-slate-950/30 border border-slate-800/50 rounded-lg p-2 hover:bg-slate-800/50 transition-colors group">
+                            
+                            <div class="col-span-4 flex flex-col gap-1 border-r border-slate-800 pr-2">
+                                <div class="flex items-center justify-between">
+                                    <input type="text" value="${ing.name}" 
+                                        class="bg-transparent border-none text-blue-100 placeholder-slate-600 text-sm font-bold p-0 w-full focus:ring-0"
+                                        onchange="updateIngredient(${recipe.id}, ${ing.id}, 'name', this.value)"
+                                        placeholder="Item Name">
+                                    <button onclick="removeIngredient(${recipe.id}, ${ing.id})" class="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-500 transition-opacity">
+                                        <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="col-span-2 flex flex-col gap-1 items-center border-r border-slate-800 px-1">
+                                <div class="flex gap-1 items-center w-full">
+                                    <input type="number" value="${ing.prodQty}" class="w-full bg-slate-950 border border-slate-700 rounded px-1 text-center text-xs py-1 text-blue-200 focus:border-blue-500 focus:outline-none input-listen" onchange="updateIngredient(${recipe.id}, ${ing.id}, 'prodQty', this.value)">
+                                    <span class="text-[8px] text-slate-600 uppercase">Itm</span>
+                                </div>
+                                <div class="flex gap-1 items-center w-full">
+                                    <input type="number" value="${ing.prodTime}" class="w-full bg-slate-950 border border-slate-700 rounded px-1 text-center text-xs py-1 text-blue-200 focus:border-blue-500 focus:outline-none input-listen" onchange="updateIngredient(${recipe.id}, ${ing.id}, 'prodTime', this.value)">
+                                    <span class="text-[8px] text-slate-600 uppercase">Sec</span>
+                                </div>
+                            </div>
+
+                            <div class="col-span-2 flex justify-center border-r border-slate-800 px-1">
+                                <input type="number" value="${ing.reqQty}" 
+                                    class="w-full bg-slate-900 border border-rose-900/40 rounded px-1 py-2 text-center text-rose-200 font-bold text-sm focus:border-rose-500 focus:outline-none focus:ring-1 focus:ring-rose-500 input-listen"
+                                    onchange="updateIngredient(${recipe.id}, ${ing.id}, 'reqQty', this.value)">
+                            </div>
+
+                            <div class="col-span-4 grid grid-cols-2 items-center">
+                                ${resultSingle}
+                                ${resultPerfect}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Footer (Add Button)
+                headerHtml += `
+                        <button onclick="addIngredient(${recipe.id})" class="w-full py-2 border-2 border-dashed border-slate-800 text-slate-600 rounded-lg hover:border-slate-600 hover:text-slate-400 hover:bg-slate-800/30 transition-all text-xs font-bold uppercase tracking-wide flex items-center justify-center gap-2 mt-2">
+                            <i data-lucide="plus" class="w-3 h-3"></i> Add Ingredient
+                        </button>
+                    </div>
+                </div>`; // End Card
+
+                card.innerHTML = headerHtml;
+                container.appendChild(card);
             });
-            
-            attachListeners();
+
             lucide.createIcons();
+            attachListeners();
+        }
+
+        // --- Logic Handlers ---
+
+        function addRecipe() {
+            recipes.push({
+                id: Date.now(),
+                name: `New Project ${recipes.length + 1}`,
+                targetTime: 1,
+                ingredients: [{ id: Date.now() + 1, name: "New Item", prodQty: 1, prodTime: 1, reqQty: 1 }]
+            });
+            render();
+        }
+
+        function removeRecipe(rId) {
+            if(confirm("Delete this entire recipe group?")) {
+                recipes = recipes.filter(r => r.id !== rId);
+                render();
+            }
+        }
+
+        function updateRecipe(rId, field, value) {
+            const r = recipes.find(x => x.id === rId);
+            if(r) {
+                if(field === 'name') r.name = value;
+                else r[field] = Number(value);
+            }
+            render(); // Re-render to update calculations
+        }
+
+        function addIngredient(rId) {
+            const r = recipes.find(x => x.id === rId);
+            if(r) {
+                r.ingredients.push({
+                    id: Date.now(),
+                    name: "New Item",
+                    prodQty: 1,
+                    prodTime: 1,
+                    reqQty: 1
+                });
+                render();
+            }
+        }
+
+        function removeIngredient(rId, iId) {
+            const r = recipes.find(x => x.id === rId);
+            if(r) {
+                r.ingredients = r.ingredients.filter(i => i.id !== iId);
+                render();
+            }
+        }
+
+        function updateIngredient(rId, iId, field, value) {
+            const r = recipes.find(x => x.id === rId);
+            if(r) {
+                const ing = r.ingredients.find(i => i.id === iId);
+                if(ing) {
+                    if(field === 'name') ing.name = value;
+                    else ing[field] = Number(value);
+                }
+            }
+            // We don't re-render on every keystroke to keep focus, 
+            // but for number inputs we might want to trigger calc immediately
+            // The input-listen approach handles 'Enter', but for instant feedback:
+            if(field !== 'name') render();
         }
 
         function attachListeners() {
@@ -246,43 +333,16 @@
             inputs.forEach(input => {
                 input.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
-                        if(input.id === 'global-time') {
-                            calculateAll();
-                        } else {
-                            input.blur(); 
-                            calculateAll();
-                            input.focus();
-                        }
+                        input.blur(); 
+                        render();
                     }
                 });
             });
         }
 
-        function updateData(id, field, value) {
-            const idx = producers.findIndex(p => p.id === id);
-            if (idx !== -1) {
-                if (field === 'name') producers[idx][field] = value;
-                else producers[idx][field] = Number(value);
-            }
-        }
+        // Init
+        render();
 
-        function calculateAll() {
-            renderRows();
-        }
-
-        function addProducer() {
-            const nextId = producers.length > 0 ? Math.max(...producers.map(p => p.id)) + 1 : 1;
-            producers.push({ id: nextId, name: `Ingredient ${producers.length + 1}`, prodQty: 1, prodTime: 1, reqQty: 1 });
-            renderRows();
-        }
-
-        function removeProducer(id) {
-            producers = producers.filter(p => p.id !== id);
-            renderRows();
-        }
-
-        // --- Init ---
-        renderRows();
     </script>
 </body>
 </html>
